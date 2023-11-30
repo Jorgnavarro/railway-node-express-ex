@@ -8,6 +8,8 @@ const cors = require('cors');
 
 const app = express();
 
+app.use(express.static('dist'))
+
 app.disable('x-powered-by')
 
 morgan.token('body', (req) => JSON.stringify(req.body))
