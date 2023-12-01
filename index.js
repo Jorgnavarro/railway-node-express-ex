@@ -1,6 +1,4 @@
 //const http = require("node:http");
-
-const { response } = require('express');
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
@@ -8,14 +6,19 @@ const cors = require('cors');
 
 const app = express();
 
+//agregamos este middleware para poder correr la página estática de nuestro front
 app.use(express.static('dist'))
 
+//deshabilitamos la cabecera que viene en express por default()
 app.disable('x-powered-by')
 
+//llevamos un registro de nuestras solicitudes y respuestas de nuestro servidor usando Morgan
+//mostramos el cuerpo de una solicitud post
 morgan.token('body', (req) => JSON.stringify(req.body))
-
+//salida por consola de nuestras solicitudes
 app.use(morgan(':method :url :status :res[content-length] :response-time ms :body'))
 
+//podemos conectar nuestro back y front con diferentes direcciones antes debemos hacer npm i cors
 app.use(cors())
 
 //morgan('tiny')
@@ -136,6 +139,7 @@ const unknowEndpoint = (req, res) => {
 
 app.use(unknowEndpoint);
 
+//configuramos por defecto el puerto 3001, como ya mandamos nuestro back a internet, se configura el puerto asignado por la plataforma donde hacemos deploy
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT)
