@@ -1,28 +1,9 @@
 //const http = require("node:http");
+require('dotenv').config()
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
-const mongoose = require('mongoose');
-
-const url = `mongodb+srv://fullstack:${process.argv[2]}@cluster0.ocikxl3.mongodb.net/note-app?retryWrites=true&w=majority`
-
-mongoose.connect(url);
-
-const noteSchema = {
-    content: String,
-    date: Date,
-    important: Boolean,
-}
-
-const Note = mongoose.model('Note', noteSchema);
-
-mongoose.set('toJSON', {
-    transform: (document, returnedObject) => {
-        returnedObject.id = returnedObject._id.toString()
-        delete returnedObject._id
-        delete returnedObject.__v
-    }
-})
+const Note = require('./models/note')
 
 
 
@@ -101,47 +82,49 @@ app.get('/api/notes', (req, res) => {
 
 //buscar un recurso por id
 app.get('/api/notes/:id', (req, res) => {
-    const id = Number(req.params.id);
-    const note = notes.find(note =>
-        //solución para debuguear, en este caso estabamos comparando nos valores de diferentes tipos de datos, por ende no nos estaba dando, para descubrir el tipo de dato del parámetro usamos typeof y nos guiamos
-        //console.log(note.id, typeof note.id, id, typeof id, note.id===id);
-        note.id === id
-    )
-    if (note === undefined) {
-        res.status(404)
-        res.send(`<h1>The note with id: ${id}, not exist in our database.</h1>`)
-    } else {
+    // const id = Number(req.params.id);
+    // const note = notes.find(note =>
+    //     //solución para debuguear, en este caso estabamos comparando nos valores de diferentes tipos de datos, por ende no nos estaba dando, para descubrir el tipo de dato del parámetro usamos typeof y nos guiamos
+    //     //console.log(note.id, typeof note.id, id, typeof id, note.id===id);
+    //     note.id === id
+    // )
+    Note.findById(req.params.id).then(note => {
         res.json(note);
-    }
+    })
 })
 //necesitamos usar el json-parser para que los datos JSON se transformen a un objeto JS
 app.use(express.json())
 
-const generateId = () => {
-    const maxId = notes.length > 0
-        ? Math.max(...notes.map(not => not.id))
-        : 0;
-    return maxId + 1;
-}
+// const generateId = () => {
+//     const maxId = notes.length > 0
+//         ? Math.max(...notes.map(not => not.id))
+//         : 0;
+//     return maxId + 1;
+// }
 
 // agregando un recurso
 app.post('/api/notes', (req, res) => {
     const body = req.body;
-    if (!body.content) {
+
+    if(body.content === undefined){
         return response.status(400).json({
             error: 'content missing'
         })
     }
-    const note = {
+
+    const note = new Note({
         content: body.content,
         important: body.important || false,
         date: new Date(),
-        id: generateId(),
-    }
-    notes = notes.concat(note)
+    })
+    // notes = notes.concat(note)
     //console.log(note);
     //console.log(req.headers);
-    res.json(note);
+    //res.json(note);
+
+    note.save().then(savedNote => {
+        res.json(savedNote)
+    })
 })
 
 // modificar un recurso
@@ -165,7 +148,7 @@ const unknowEndpoint = (req, res) => {
 app.use(unknowEndpoint);
 
 //configuramos por defecto el puerto 3001, como ya mandamos nuestro back a internet, se configura el puerto asignado por la plataforma donde hacemos deploy
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3001
 
 app.listen(PORT)
 
