@@ -2,6 +2,28 @@
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const mongoose = require('mongoose');
+
+const url = `mongodb+srv://fullstack:${process.argv[2]}@cluster0.ocikxl3.mongodb.net/note-app?retryWrites=true&w=majority`
+
+mongoose.connect(url);
+
+const noteSchema = {
+    content: String,
+    date: Date,
+    important: Boolean,
+}
+
+const Note = mongoose.model('Note', noteSchema);
+
+mongoose.set('toJSON', {
+    transform: (document, returnedObject) => {
+        returnedObject.id = returnedObject._id.toString()
+        delete returnedObject._id
+        delete returnedObject.__v
+    }
+})
+
 
 
 const app = express();
@@ -71,7 +93,10 @@ app.get('/', (req, res) => {
 
 //llamar todos los recursos
 app.get('/api/notes', (req, res) => {
-    res.json(notes);
+    //res.json(notes);
+    Note.find({}).then(noteToSearch => {
+        res.json(noteToSearch);
+    })
 })
 
 //buscar un recurso por id
