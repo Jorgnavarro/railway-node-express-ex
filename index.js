@@ -28,26 +28,26 @@ app.use(cors())
 
 
 
-let notes = [
-    {
-        id: 1,
-        content: "HTML is easy",
-        date: "2019-05-30T17:30:31.098Z",
-        important: true
-    },
-    {
-        id: 2,
-        content: "Browser can execute only Javascript",
-        date: "2019-05-30T18:39:34.091Z",
-        important: false
-    },
-    {
-        id: 3,
-        content: "GET and POST are the most important methods of HTTP protocol",
-        date: "2019-05-30T19:20:14.298Z",
-        important: true
-    }
-]
+// let notes = [
+//     {
+//         id: 1,
+//         content: "HTML is easy",
+//         date: "2019-05-30T17:30:31.098Z",
+//         important: true
+//     },
+//     {
+//         id: 2,
+//         content: "Browser can execute only Javascript",
+//         date: "2019-05-30T18:39:34.091Z",
+//         important: false
+//     },
+//     {
+//         id: 3,
+//         content: "GET and POST are the most important methods of HTTP protocol",
+//         date: "2019-05-30T19:20:14.298Z",
+//         important: true
+//     }
+// ]
 
 
 // const app = http.createServer((req, res) => {
@@ -81,7 +81,7 @@ app.get('/api/notes', (req, res) => {
 })
 
 //buscar un recurso por id
-app.get('/api/notes/:id', (req, res) => {
+app.get('/api/notes/:id', (req, res, next) => {
     // const id = Number(req.params.id);
     // const note = notes.find(note =>
     //     //solución para debuguear, en este caso estabamos comparando nos valores de diferentes tipos de datos, por ende no nos estaba dando, para descubrir el tipo de dato del parámetro usamos typeof y nos guiamos
@@ -89,9 +89,20 @@ app.get('/api/notes/:id', (req, res) => {
     //     note.id === id
     // )
     Note.findById(req.params.id).then(note => {
-        res.json(note);
+        if(note){
+            res.json(note);
+        }else{
+            res.status(404).send('<h1>The resource does not exist in our database</h1>')
+        }
+    }).catch(error => {
+        // console.log(error.message)
+        // res.status(400).send({error: 'malformatted id'})
+        //lo pasamos a nuestro middleware
+        next(error)
     })
 })
+
+
 //necesitamos usar el json-parser para que los datos JSON se transformen a un objeto JS
 app.use(express.json())
 
@@ -130,15 +141,32 @@ app.post('/api/notes', (req, res) => {
 // modificar un recurso
 app.put('/api/notes/:id', (req, res) => {
     const body = req.body
-    console.log(body);
-    res.json(body)
+    // console.log(body);
+    // res.json(body)
+
+    const note = {
+        content: body.content,
+        important: body.important,
+    }
+
+    Note.findByIdAndUpdate(req.params.id, note, {new: true})
+        .then(updatedNote => { 
+            res.json(updatedNote)
+        })
+        .catch(err => next(err))
+
 })
 
 // Eliminar un recurso
 app.delete('/api/notes/:id', (req, res) => {
-    const id = Number(req.params.id);
-    notes = notes.filter(note => note.id !== id)
-    res.status(204).end()
+    // const id = Number(req.params.id);
+    // notes = notes.filter(note => note.id !== id)
+    // res.status(204).end()
+    Note.findByIdAndDelete(req.params.id)
+        .then(result => {
+            res.status(204).end()
+        })
+        .catch(err => next(err))
 })
 
 const unknowEndpoint = (req, res) => {
@@ -146,6 +174,16 @@ const unknowEndpoint = (req, res) => {
 }
 
 app.use(unknowEndpoint);
+
+//manejar un error cuando el formato proporcionado en el parámetro del id es incorrecto
+const errorHandler = (err, req, res, next) => {
+    console.log(err.message)
+    if(err.name === "CastError"){
+        return res.status(400).send({error: 'malformatted id'})
+    }
+}
+//creación del middleware para manejar el error del id con formato incorrecto
+app.use(errorHandler)
 
 //configuramos por defecto el puerto 3001, como ya mandamos nuestro back a internet, se configura el puerto asignado por la plataforma donde hacemos deploy
 const PORT = process.env.PORT || 3001
