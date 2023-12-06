@@ -6,7 +6,6 @@ const cors = require('cors');
 const Note = require('./models/note')
 
 
-
 const app = express();
 
 //agregamos este middleware para poder correr la página estática de nuestro front
@@ -114,11 +113,11 @@ app.use(express.json())
 // }
 
 // agregando un recurso
-app.post('/api/notes', (req, res) => {
+app.post('/api/notes', (req, res, next) => {
     const body = req.body;
-
-    if(body.content === undefined){
-        return response.status(400).json({
+    //utilizamos el !body.content para implementar los falsy or thruty según sea el caso, en ese caso, si !body.content está vacío, indicará verdad y se enviará un 400, no se guardará la nota vacía. Pero si ocurre lo contrario se almacena la nota
+    if(!body.content){
+        return res.status(400).json({
             error: 'content missing'
         })
     }
@@ -132,10 +131,13 @@ app.post('/api/notes', (req, res) => {
     //console.log(note);
     //console.log(req.headers);
     //res.json(note);
-
-    note.save().then(savedNote => {
-        res.json(savedNote)
-    })
+    //De esta forma el código de abajo es más limpio, después de guardar la nota en la BBDD, en el primer then() la formateamos a .toJSON() y la retornamos. Luego en el segundo .then() la nota formateada la enviamos como res.json(), de esa forma tenemos un código más legible.
+    note.save()
+        .then(savedNote => savedNote.toJSON())
+        .then(savedAndFormattedNote => {
+            res.json(savedAndFormattedNote)
+        })
+        .catch(err => next(err))
 })
 
 // modificar un recurso
@@ -180,13 +182,16 @@ const errorHandler = (err, req, res, next) => {
     console.log(err.message)
     if(err.name === "CastError"){
         return res.status(400).send({error: 'malformatted id'})
+    }else if(err.name === 'ValidationError'){
+        return res.status(400).json({error: err.message})
     }
+    next(err)
 }
 //creación del middleware para manejar el error del id con formato incorrecto
 app.use(errorHandler)
 
 //configuramos por defecto el puerto 3001, como ya mandamos nuestro back a internet, se configura el puerto asignado por la plataforma donde hacemos deploy
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 
 app.listen(PORT)
 
