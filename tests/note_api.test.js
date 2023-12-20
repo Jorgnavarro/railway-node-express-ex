@@ -43,7 +43,7 @@ beforeEach(async () => {
 //con respecto a la verificación del encabezado, usamos una expresión regular /application\/json/
 //se establece un \ porque normalmente el encabezado es: application/json, entonces para que no se entienda como
 //una terminación de la expresión.
-test('notes are returned as json', async () => {
+test('Notes are returned as json', async () => {
     await api
         .get('/api/notes')
         .expect(200)
@@ -52,7 +52,7 @@ test('notes are returned as json', async () => {
 
 
 //Con el siguiente test, ya con datos cargados, comprobamos que el total de elementos sea 2
-test('there are two notes', async () => {
+test('There are two notes', async () => {
     const response = await api.get('/api/notes')
 
     //expect(response.body).toHaveLength(2)
@@ -74,11 +74,48 @@ test('Here we check the content of the notes', async () => {
     )
 })
 
+test('a valid note can be added', async () => {
+    const newNote = {
+        content: 'async/await simplifies making async calls',
+        important: true,
+    }
+
+    await api
+        .post('/api/notes')
+        .send(newNote)
+        .expect(200)
+        .expect('Content-Type', /application\/json/)
+
+    const response = await api.get('/api/notes')
+
+    const contents = response.body.map(note => note.content)
+
+    expect(response.body).toHaveLength(initialNotes.length + 1)
+    expect(contents).toContain(
+        'async/await simplifies making async calls'
+    )
+
+})
+
+test('note without content is not added', async () => {
+    const newNote = {
+        important: true
+    }
+    await api
+    .post('/api/notes')
+    .send(newNote)
+    .expect(400)
+
+    const response = await api.get('/api/notes')
+
+    expect(response.body).toHaveLength(initialNotes.length)
+})
+
 //una vez terminada la ejecución de todas las pruebas, cerramos la conexión a la BBDD
 afterAll(() => {
     mongoose.connection.close()
 })
 
-//para ejecutar solamente este archivo podemos escribir npm test -- test/note_api.test.js o npm test -- -t 'nombre especifico del test
+//para ejecutar solamente este archivo podemos escribir npm test -- tests/note_api.test.js o npm test -- -t 'nombre especifico del test
 //Nota: si se ejecuta un solo test, es posible que no se cierre la conexión a la BBDD porque no se ejecutaría
 //la función  afterAll
