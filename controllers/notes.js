@@ -45,14 +45,14 @@ notesRouter.get('/:id', (req, res, next) => {
 // }
 
 // agregando un recurso
-notesRouter.post('/', (req, res, next) => {
+notesRouter.post('/', async (req, res, next) => {
     const body = req.body;
     //utilizamos el !body.content para implementar los falsy or thruty según sea el caso, en ese caso, si !body.content está vacío, indicará verdad y se enviará un 400, no se guardará la nota vacía. Pero si ocurre lo contrario se almacena la nota
-    if(!body.content){
-        return res.status(400).json({
-            error: 'content missing'
-        })
-    }
+    // if(!body.content){
+    //     return res.status(400).json({
+    //         error: 'content missing'
+    //     })
+    // }
 
     const note = new Note({
         content: body.content,
@@ -64,12 +64,18 @@ notesRouter.post('/', (req, res, next) => {
     //console.log(req.headers);
     //res.json(note);
     //De esta forma el código de abajo es más limpio, después de guardar la nota en la BBDD, en el primer then() la formateamos a .toJSON() y la retornamos. Luego en el segundo .then() la nota formateada la enviamos como res.json(), de esa forma tenemos un código más legible.
-    note.save()
-        .then(savedNote => savedNote.toJSON())
-        .then(savedAndFormattedNote => {
-            res.json(savedAndFormattedNote)
-        })
-        .catch(err => next(err))
+    // note.save()
+    //     .then(savedNote => savedNote.toJSON())
+    //     .then(savedAndFormattedNote => {
+    //         res.json(savedAndFormattedNote)
+    //     })
+    //     .catch(err => next(err))
+    try{
+        const savedNote = await note.save()
+        res.json(savedNote)
+    }catch(exception){
+        next(exception)
+    }
 })
 
 // modificar un recurso

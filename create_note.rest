@@ -2,6 +2,6 @@ POST http://localhost:3001/api/notes
 Content-Type: application/json
 
 {
-    "content": "You can do it, trust in God and yourself",
+    "content": "Testing with try/catch, handling errors",
     "important" : true
 }
