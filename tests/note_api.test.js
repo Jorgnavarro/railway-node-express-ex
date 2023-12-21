@@ -10,10 +10,17 @@ const api = supertest(app)
 //Dato curioso, supertest se encarga de que la aplicación que estamos testeando se inicie en un puerto que usa
 //internamente, por tanto podemos correr las pruebas de forma paralela mientras el sever está en producción
 
+//---------------------Refactorizamos nuestra app------------------------
+const helper = require('./test_helper')
+
+
 //creamos los datos en nuestra BBDD, para poder correr nuestros tests
 //llamamos al modelo
 const Note = require('../models/note')
 //Almacenamos en una variable nuestros datos
+/*
+Antes de refactorizar nuestro back, primero debemos refactorizar nuestros tests, para asegurarnos que todo funcione
+en orden. Por ello, const initial notes, ahora está alojado en un archivo externo ./test_helper.js, debemos llamarlo de allá
 const initialNotes = [
     {
         content: 'You can do it',
@@ -26,16 +33,18 @@ const initialNotes = [
         important: true,
     },
 ]
+*/
 //Esta propiedad de jest, nos permite ejecutar operaciones antes que se hagan los test
 //se deben cargar previamente los datos a la BBDD para poder correr nuestras pruebas
 //Primero eliminamos cualquier dato existente con Note.deleteMany({})
 //luego agregamos cada nota haciendo uso del modelo Note y de la propiedad .save(), al ser peticiones
 //se deben usar promesas o funciones asíncronas, en este caso, es más sencillo usar async/await
 beforeEach(async () => {
+    //al refactorizar nuestros test, traemos nuestras notas de helper
     await Note.deleteMany({})
-    let noteObject = new Note(initialNotes[0])
+    let noteObject = new Note(helper.initialNotes[0])
     await noteObject.save()
-    noteObject = new Note(initialNotes[1])
+    noteObject = new Note(helper.initialNotes[1])
     await noteObject.save()
 })
 //Este test realiza una solicitud HTTP GET a la url api/notes, verifica que se respona con un código de estado 200
@@ -56,7 +65,8 @@ test('There are two notes', async () => {
     const response = await api.get('/api/notes')
 
     //expect(response.body).toHaveLength(2)
-    expect(response.body).toHaveLength(initialNotes.length)
+    //cambiamos inital notes lo traemos del file helper
+    expect(response.body).toHaveLength(helper.initialNotes.length)
 })
 
 //Acá comprobamos que el contenido de la primera nota almacenada en la BBDD sea el pasado en .toBe en el primer
@@ -86,16 +96,24 @@ test('a valid note can be added', async () => {
         .expect(200)
         .expect('Content-Type', /application\/json/)
 
-    const response = await api.get('/api/notes')
+    //const response = await api.get('/api/notes')
+    //refactorizamos nuestro test, agregando una nota más
+    const notesAtEnd = await helper.notesInDb()
+    //expect(response.body).toHaveLength(initialNotes.length + 1)
+    expect(notesAtEnd).toHaveLength(helper.initialNotes.length + 1)
 
-    const contents = response.body.map(note => note.content)
 
-    expect(response.body).toHaveLength(initialNotes.length + 1)
+    //const contents = response.body.map(note => note.content)
+    const contents = notesAtEnd.map(note => note.content)
+
     expect(contents).toContain(
         'async/await simplifies making async calls'
     )
 
 })
+
+//Se prueba de que una nota que no tenga contenido no se guarde.
+//con la const response, estamos verificando el almacenamiento en nuestr BBDD test
 
 test('note without content is not added', async () => {
     const newNote = {
@@ -106,9 +124,11 @@ test('note without content is not added', async () => {
     .send(newNote)
     .expect(400)
 
-    const response = await api.get('/api/notes')
+    //const response = await api.get('/api/notes')
+    const notesAtEnd = await helper.notesInDb()
 
-    expect(response.body).toHaveLength(initialNotes.length)
+    //expect(response.body).toHaveLength(initialNotes.length)
+    expect(notesAtEnd).toHaveLength(helper.initialNotes.length)
 })
 
 //una vez terminada la ejecución de todas las pruebas, cerramos la conexión a la BBDD
