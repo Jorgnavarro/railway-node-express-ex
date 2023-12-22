@@ -7,33 +7,48 @@ const Note = require('../models/note')
 // })
 
 //llamar todos los recursos
-notesRouter.get('/', (req, res) => {
+notesRouter.get('/', async (req, res) => {
     //res.json(notes);
-    Note.find({}).then(noteToSearch => {
-        res.json(noteToSearch);
-    })
+    // Note.find({}).then(noteToSearch => {
+    //     res.json(noteToSearch);
+    // })
+    const notes = await Note.find({})
+    res.json(notes)
 })
 
 //buscar un recurso por id
-notesRouter.get('/:id', (req, res, next) => {
+notesRouter.get('/:id', async (req, res) => {
+    //como ahora usamos la libería que maneja los errores de async, no necesitamos el tercer parámetro next, así que se
+    //omite
     // const id = Number(req.params.id);
     // const note = notes.find(note =>
-    //     //solución para debuguear, en este caso estabamos comparando nos valores de diferentes tipos de datos, por ende no nos estaba dando, para descubrir el tipo de dato del parámetro usamos typeof y nos guiamos
-    //     //console.log(note.id, typeof note.id, id, typeof id, note.id===id);
+    //solución para debuguear, en este caso estabamos comparando nos valores de diferentes tipos de datos, por ende no nos estaba dando, para descubrir el tipo de dato del parámetro usamos typeof y nos guiamos
+    //console.log(note.id, typeof note.id, id, typeof id, note.id===id);
     //     note.id === id
     // )
-    Note.findById(req.params.id).then(note => {
-        if(note){
-            res.json(note);
-        }else{
-            res.status(404).send('<h1>The resource does not exist in our database</h1>')
-        }
-    }).catch(error => {
-        // console.log(error.message)
-        // res.status(400).send({error: 'malformatted id'})
-        //lo pasamos a nuestro middleware
-        next(error)
-    })
+    //-------------Usando try/catch---------------
+    // Note.findById(req.params.id).then(note => {
+    //     if(note){
+    //         res.json(note);
+    //     }else{
+    //         res.status(404).send('<h1>The resource does not exist in our database</h1>')
+    //     }
+    // }).catch(error => {
+         // console.log(error.message)
+         // res.status(400).send({error: 'malformatted id'})
+         //lo pasamos a nuestro middleware
+    //     next(error)
+    // })
+    //
+
+    //----------Usando la librería express-async-errors-----
+    const note = await Note.findById(req.params.id)
+
+    if(note){
+        res.json(note)
+    }else{
+        res.status(404).send('<h1>The resource does not exist in our database</h1>').end()
+    }
 })
 
 
@@ -45,7 +60,8 @@ notesRouter.get('/:id', (req, res, next) => {
 // }
 
 // agregando un recurso
-notesRouter.post('/', async (req, res, next) => {
+notesRouter.post('/', async (req, res) => {
+    //no necesitamos usar el tercer parámetro next, por eso lo eliminamos de la línea de arriba después de res.
     const body = req.body;
     //utilizamos el !body.content para implementar los falsy or thruty según sea el caso, en ese caso, si !body.content está vacío, indicará verdad y se enviará un 400, no se guardará la nota vacía. Pero si ocurre lo contrario se almacena la nota
     // if(!body.content){
@@ -70,16 +86,23 @@ notesRouter.post('/', async (req, res, next) => {
     //         res.json(savedAndFormattedNote)
     //     })
     //     .catch(err => next(err))
-    try{
-        const savedNote = await note.save()
-        res.json(savedNote)
-    }catch(exception){
-        next(exception)
-    }
+
+    //-------------Usando try/catch---------------
+    //
+    // try{
+    //     const savedNote = await note.save()
+    //     res.json(savedNote)
+    // }catch(exception){
+    //     next(exception)
+    // }
+
+    //----------Usando la librería express-async-errors-----
+    const savedNote = await note.save()
+    res.json(savedNote)
 })
 
 // modificar un recurso
-notesRouter.put('/:id', (req, res) => {
+notesRouter.put('/:id', async (req, res) => {
     const body = req.body
     // console.log(body);
     // res.json(body)
@@ -88,25 +111,34 @@ notesRouter.put('/:id', (req, res) => {
         content: body.content,
         important: body.important,
     }
+    //-------------Usando try/catch---------------
+    // Note.findByIdAndUpdate(req.params.id, note, {new: true})
+    //     .then(updatedNote => { 
+    //         res.json(updatedNote)
+    //     })
+    //     .catch(err => next(err))
 
-    Note.findByIdAndUpdate(req.params.id, note, {new: true})
-        .then(updatedNote => { 
-            res.json(updatedNote)
-        })
-        .catch(err => next(err))
+    //----------Usando la librería express-async-errors-----
+    const updatedNote = await Note.findByIdAndUpdate(req.params.id, note, {new: true})
+    res.json(updatedNote)
+
 
 })
 
 // Eliminar un recurso
-notesRouter.delete('/:id', (req, res) => {
+notesRouter.delete('/:id', async (req, res) => {
     // const id = Number(req.params.id);
     // notes = notes.filter(note => note.id !== id)
     // res.status(204).end()
-    Note.findByIdAndDelete(req.params.id)
-        .then(result => {
-            res.status(204).end()
-        })
-        .catch(err => next(err))
+    //------------Usando try/catch-------------
+    // Note.findByIdAndDelete(req.params.id)
+    //     .then(result => {
+    //         res.status(204).end()
+    //     })
+    //     .catch(err => next(err))
+    //----------Usando la librería express-async-errors-----
+    await Note.findByIdAndDelete(req.params.id)
+    res.status(204).end()
 })
 
 module.exports = notesRouter

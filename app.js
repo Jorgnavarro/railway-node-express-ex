@@ -1,5 +1,9 @@
 const config = require('./utils/config')
 const express = require('express')
+//con esta biblioteca, omitimos el uso de try/catch
+//Ya no se necesita usar next(err) o next(exception), la biblioteca se encarga de todo lo que hay por debajo del capó
+//Si ocurre una excepción en una ruta async, la ejecución se pasa automáticamente al middleware de manejo de errores.
+require('express-async-errors')
 const app = express()
 const cors = require('cors')
 const morgan = require('morgan');

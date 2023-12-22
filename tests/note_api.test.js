@@ -2,7 +2,7 @@
 const mongoose = require('mongoose')
 //Usamos el paquete supertest para poder probar la API, se debe instalar npm i --save-dev supertest
 const supertest = require('supertest')
-const app = require('../app') //Express appn
+const app = require('../app') //Express app
 //la prueba importa la aplicación de Express del modulo app.js, y la envuelve con la función supertest
 //En un objeto llamado superagent. Este objeto se asigna a la variable api y las pruebas pueden usarlo
 //para realizar solicitudes HTTP al backend
@@ -42,10 +42,23 @@ const initialNotes = [
 beforeEach(async () => {
     //al refactorizar nuestros test, traemos nuestras notas de helper
     await Note.deleteMany({})
-    let noteObject = new Note(helper.initialNotes[0])
-    await noteObject.save()
-    noteObject = new Note(helper.initialNotes[1])
-    await noteObject.save()
+    //Forma de guardar notas en la BBDD con operaciones separadas
+    // let noteObject = new Note(helper.initialNotes[0])
+    // await noteObject.save()
+    // noteObject = new Note(helper.initialNotes[1])
+    // await noteObject.save()
+    
+    //---------forma más óptima, para guardar varios elementos en una BBDD en una sola operación.--------
+    //Todas las notas las mapeamos y almancenamos en noteObjects, ya creadas con la función constructora Note
+    //UN array de objetos Mongoose
+    const noteObjects = helper.initialNotes.map(note => new Note(note))
+    //Creamos un array de promesas al usar la propiedad .save(), con los objetos mongoose
+    const promiseArray = noteObjects.map(note => note.save())
+    //Con el método Promise.all(), se puede usar para transformar una serie de promesas en una única
+    //Que se cumplirá una vez que se resuelva cada promesa en la matriz que se le pasa como parámetro, en este caso
+    //promiseArray. Con await nos garantizamos que se espere cuando finalice cada promesa al guardar una nota, entonces
+    //la BBDD se habrá inicializado.
+    await Promise.all(promiseArray)
 })
 //Este test realiza una solicitud HTTP GET a la url api/notes, verifica que se respona con un código de estado 200
 //Y también se verifica que el encabezado Content-Type se establece en application/json (nuestro formato deseado)
