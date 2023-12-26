@@ -16,7 +16,7 @@ const initialNotes = [
 const nonExistingId = async () => {
     const note = new Note({content: "Creating a new note for delete and test", date: new Date()})
     await note.save()
-    await note.remove()
+    await note.deleteOne()
 
     return note._id.toString()
 }

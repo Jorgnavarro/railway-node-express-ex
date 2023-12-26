@@ -60,121 +60,154 @@ beforeEach(async () => {
     //la BBDD se habrá inicializado.
     await Promise.all(promiseArray)
 })
-//Este test realiza una solicitud HTTP GET a la url api/notes, verifica que se respona con un código de estado 200
-//Y también se verifica que el encabezado Content-Type se establece en application/json (nuestro formato deseado)
-//con respecto a la verificación del encabezado, usamos una expresión regular /application\/json/
-//se establece un \ porque normalmente el encabezado es: application/json, entonces para que no se entienda como
-//una terminación de la expresión.
-test('Notes are returned as json', async () => {
-    await api
-        .get('/api/notes')
-        .expect(200)
-        .expect('Content-Type', /application\/json/)
+
+describe('when there is inittially some notes saved', () => {
+
+    //Este test realiza una solicitud HTTP GET a la url api/notes, verifica que se respona con un código de estado 200
+    //Y también se verifica que el encabezado Content-Type se establece en application/json (nuestro formato deseado)
+    //se establece un \ porque normalmente el encabezado es: application/json, entonces para que no se entienda como
+    //con respecto a la verificación del encabezado, usamos una expresión regular /application\/json/
+    test('Notes are returned as json', async () => {
+    //una terminación de la expresión.
+        await api
+            .get('/api/notes')
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+    
+    })//Con el siguiente test, ya con datos cargados, comprobamos que el total de elementos sea 2
+    
+    test('All notes are returned', async () => {
+        const response = await api.get('/api/notes')
+        //expect(response.body).toHaveLength(2)
+    
+        //cambiamos inital notes lo traemos del file helper
+        expect(response.body).toHaveLength(helper.initialNotes.length)
+    
+    })//Acá comprobamos que el contenido de la primera nota almacenada en la BBDD sea el pasado en .toBe en el primer
+    
+    //Caso
+    //Para hacerlo más dinámico, recorremos la colección devuelta al obtener todos los contenidos de las notas
+    //en la variable contents, luego con el método .toContain, comprobamos que exista dicho contenido en al menos
+    //una de las notas de nuestra colección
+    test('A specific note is within the returned notes', async () => {
+        const response = await api.get('/api/notes')
+        //expect(response.body[0].content).toBe('You can do it')
+    
+        const contents = response.body.map(note => note.content)
+        expect(contents).toContain(
+            'Browser can execute only Javascript'
+        )
+    
+    })
+    
 })
 
+describe('Viewing a specific note', () => {
 
-//Con el siguiente test, ya con datos cargados, comprobamos que el total de elementos sea 2
-test('There are two notes', async () => {
-    const response = await api.get('/api/notes')
+    test('Succeeds with a valid id', async () => {
+        const notesAtStart = await helper.notesInDb()
+    
+        const noteToView = notesAtStart[0]
+    
+        const resultNote = await api
+            .get(`/api/notes/${noteToView.id}`)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+        
+        const processedNoteToView = JSON.parse(JSON.stringify(noteToView))
+    
+        expect(resultNote.body).toEqual(processedNoteToView)
+    })
 
-    //expect(response.body).toHaveLength(2)
-    //cambiamos inital notes lo traemos del file helper
-    expect(response.body).toHaveLength(helper.initialNotes.length)
+    test('Fails with statuscode 404 if note does not exist', async () => {
+        const validNonexistingId = await helper.nonExistingId()
+
+        await api
+            .get(`/api/notes/${validNonexistingId}`)
+            .expect(404)
+    })
+
+    test('Fails with status code 400 is invalid', async () => {
+        const invalidId = '5a3d5da59070081a82a3445'
+
+        await api
+            .get(`/api/notes/${invalidId}`)
+            .expect(400)
+    })
+
 })
 
-//Acá comprobamos que el contenido de la primera nota almacenada en la BBDD sea el pasado en .toBe en el primer
-//Caso
-//Para hacerlo más dinámico, recorremos la colección devuelta al obtener todos los contenidos de las notas
-//en la variable contents, luego con el método .toContain, comprobamos que exista dicho contenido en al menos
-//una de las notas de nuestra colección
-test('Here we check the content of the notes', async () => {
-    const response = await api.get('/api/notes')
+describe('Addition of a new note', () => {
+    test('Succeeds with valid data', async () => {
+        const newNote = {
+            content: 'async/await simplifies making async calls',
+            important: true,
+        }
+    
+        await api
+            .post('/api/notes')
+            .send(newNote)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+    
+        //const response = await api.get('/api/notes')
+        //refactorizamos nuestro test, agregando una nota más
+        const notesAtEnd = await helper.notesInDb()
+        //expect(response.body).toHaveLength(initialNotes.length + 1)
+        expect(notesAtEnd).toHaveLength(helper.initialNotes.length + 1)
+    
+    
+        //const contents = response.body.map(note => note.content)
+        const contents = notesAtEnd.map(note => note.content)
+    
+        expect(contents).toContain(
+            'async/await simplifies making async calls'
+        )
+    
+    })
 
-    //expect(response.body[0].content).toBe('You can do it')
-    const contents = response.body.map(note => note.content)
-    expect(contents).toContain(
-        'Browser can execute only Javascript'
-    )
-})
+    //Se prueba de que una nota que no tenga contenido no se guarde.
+    //con la const response, estamos verificando el almacenamiento en nuestr BBDD test
 
-test('a valid note can be added', async () => {
-    const newNote = {
-        content: 'async/await simplifies making async calls',
-        important: true,
-    }
-
-    await api
+    test('Fails with status 400 if data invalid', async () => {
+        const newNote = {
+            important: true
+        }
+        await api
         .post('/api/notes')
         .send(newNote)
-        .expect(200)
-        .expect('Content-Type', /application\/json/)
+        .expect(400)
 
-    //const response = await api.get('/api/notes')
-    //refactorizamos nuestro test, agregando una nota más
-    const notesAtEnd = await helper.notesInDb()
-    //expect(response.body).toHaveLength(initialNotes.length + 1)
-    expect(notesAtEnd).toHaveLength(helper.initialNotes.length + 1)
+        //const response = await api.get('/api/notes')
+        const notesAtEnd = await helper.notesInDb()
 
-
-    //const contents = response.body.map(note => note.content)
-    const contents = notesAtEnd.map(note => note.content)
-
-    expect(contents).toContain(
-        'async/await simplifies making async calls'
-    )
-
+        //expect(response.body).toHaveLength(initialNotes.length)
+        expect(notesAtEnd).toHaveLength(helper.initialNotes.length)
+    })
+    
 })
 
-//Se prueba de que una nota que no tenga contenido no se guarde.
-//con la const response, estamos verificando el almacenamiento en nuestr BBDD test
+describe('Deletion of a note', () => {
 
-test('note without content is not added', async () => {
-    const newNote = {
-        important: true
-    }
-    await api
-    .post('/api/notes')
-    .send(newNote)
-    .expect(400)
-
-    //const response = await api.get('/api/notes')
-    const notesAtEnd = await helper.notesInDb()
-
-    //expect(response.body).toHaveLength(initialNotes.length)
-    expect(notesAtEnd).toHaveLength(helper.initialNotes.length)
-})
-
-test('A specific note can be viewed', async () => {
-    const notesAtStart = await helper.notesInDb()
-
-    const noteToView = notesAtStart[0]
-
-    const resultNote = await api
-        .get(`/api/notes/${noteToView.id}`)
-        .expect(200)
-        .expect('Content-Type', /application\/json/)
+    test('Succeeds with status code 204 if id valid', async () => {
+        const notesAtStart = await helper.notesInDb()
     
-    const processedNoteToView = JSON.parse(JSON.stringify(noteToView))
-
-    expect(resultNote.body).toEqual(processedNoteToView)
-})
-
-test('A note can be deleted', async () => {
-    const notesAtStart = await helper.notesInDb()
-
-    const noteToDelete = notesAtStart[0]
+        const noteToDelete = notesAtStart[0]
+        
+        await api 
+            .delete(`/api/notes/${noteToDelete.id}`)
+            .expect(204)
+        
+        const notesAtEnd = await helper.notesInDb()
     
-    await api 
-        .delete(`/api/notes/${noteToDelete.id}`)
-        .expect(204)
+        expect(notesAtEnd).toHaveLength(helper.initialNotes.length - 1)
     
-    const notesAtEnd = await helper.notesInDb()
+        const contents = notesAtEnd.map(note => note.content)
+    
+        expect(contents).not.toContain(noteToDelete.content)
+    })
+    
 
-    expect(notesAtEnd).toHaveLength(helper.initialNotes.length - 1)
-
-    const contents = notesAtEnd.map(note => note.content)
-
-    expect(contents).not.toContain(noteToDelete.content)
 })
 
 //una vez terminada la ejecución de todas las pruebas, cerramos la conexión a la BBDD
