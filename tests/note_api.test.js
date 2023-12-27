@@ -61,7 +61,7 @@ beforeEach(async () => {
     await Promise.all(promiseArray)
 })
 
-describe('when there is inittially some notes saved', () => {
+describe('when there is initially some notes saved', () => {
 
     //Este test realiza una solicitud HTTP GET a la url api/notes, verifica que se respona con un código de estado 200
     //Y también se verifica que el encabezado Content-Type se establece en application/json (nuestro formato deseado)
