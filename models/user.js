@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
    passwordHash: String,
    notes: [
      {
-        type: mongoose.SchemaTypes.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'Note'
      }
    ],

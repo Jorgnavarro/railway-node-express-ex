@@ -44,9 +44,9 @@ app.use(morgan(':method :url :status :res[content-length] :response-time ms :bod
 
 app.use(middleware.requestLogger)
 
-app.use('/api/notes', notesRouter)
-
 app.use('/api/users', usersRouter)
+
+app.use('/api/notes', notesRouter)
 
 app.use(middleware.unknownEndpoint)
 

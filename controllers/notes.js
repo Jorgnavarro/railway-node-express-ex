@@ -1,5 +1,7 @@
 const notesRouter = require('express').Router()
 const Note = require('../models/note')
+//agregamos el user
+const User = require('../models/user')
 
 //Página inicial al ingresar al localhost
 // notesRouter.get('/', (req, res) => {
@@ -69,11 +71,15 @@ notesRouter.post('/', async (req, res) => {
     //         error: 'content missing'
     //     })
     // }
-
+    //buscamos el usuario para agregar como nuevo parámetro a la nota
+    //las configuraciones ya están realizadas en el modelo
+    const user = await User.findById(body.userId)
+    console.log(user)
     const note = new Note({
         content: body.content,
         important: body.important || false,
         date: new Date(),
+        user: user._id
     })
     // notes = notes.concat(note)
     //console.log(note);
@@ -98,6 +104,13 @@ notesRouter.post('/', async (req, res) => {
 
     //----------Usando la librería express-async-errors-----
     const savedNote = await note.save()
+    //Ingresamos a la matriz de notes que tiene el usuario, previamente
+    //ya configurada, agregamos a la matriz el id de la note con 
+    //.concat
+    console.log(savedNote)
+    user.notes = user.notes.concat(savedNote._id)
+    await user.save()
+    //luego hacemos la conversión
     res.json(savedNote)
 })
 
