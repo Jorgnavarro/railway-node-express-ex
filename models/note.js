@@ -1,6 +1,10 @@
 
 const mongoose = require('mongoose');
 
+//dentro del objeto user, para poder usar populate, sea en notes o en users
+//se deben definir los types, porque la base de datos no sabe que los ID
+//almacenados hacen referencias a documentos en la colección usuario
+//por ellos los types se definen en el schema de mongoose con la opción ref
 
 const noteSchema = new mongoose.Schema({
     content:{

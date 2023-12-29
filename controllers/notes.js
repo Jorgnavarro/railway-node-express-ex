@@ -14,7 +14,7 @@ notesRouter.get('/', async (req, res) => {
     // Note.find({}).then(noteToSearch => {
     //     res.json(noteToSearch);
     // })
-    const notes = await Note.find({})
+    const notes = await Note.find({}).populate('user', {username: 1, name: 1})
     res.json(notes)
 })
 
@@ -73,11 +73,14 @@ notesRouter.post('/', async (req, res) => {
     // }
     //buscamos el usuario para agregar como nuevo parámetro a la nota
     //las configuraciones ya están realizadas en el modelo
+    //Una opción corta en el dato important: body.important || false
+    //indica que si body important no está definido, será false, en caso contrario será
+    //lo que contenga body.important, lo escribo porque pondré otra sintaxis
     const user = await User.findById(body.userId)
     console.log(user)
     const note = new Note({
         content: body.content,
-        important: body.important || false,
+        important: body.important === undefined ? false : body.important,
         date: new Date(),
         user: user._id
     })

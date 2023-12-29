@@ -2,8 +2,13 @@ const bcrypt = require('bcrypt')
 const usersRouter = require('express').Router()
 const User = require('../models/user')
 
+//Con populate nos estamos trayendo toda la información de las notas
+//asignadas a ese usuario, Si solamente agregamos .populate('notes'), nos traeremos toda la info
+//de la nota, pero si agregamos .populate('notes', {content: 1, date: 1}), solamente nos traeremos
+//esas propiedades del objeto note
+
 usersRouter.get('/', async (req, res) => {
-    const users = await User.find({})
+    const users = await User.find({}).populate('notes', {content: 1, date: 1})
     
     res.json(users)
 })
