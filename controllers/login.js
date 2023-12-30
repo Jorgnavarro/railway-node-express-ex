@@ -32,7 +32,7 @@ loginRouter.post('/', async (req, res) => {
     //Usamos la propiedad para crear la firma digital del token
     //jwt.sign y por parámetros le pasamos el userForToken, junto con el process.env.SECRET, con ese proceso se le indica al token que ha sido firmado digitalmente usando una variable de entorno como secreto. Esto garantiza que aquellos que conozcan el secreto, solo las partes puedan generar un token válido.
     //El valor de la variable de entorno debe establecerse en el archivo .env
-    const token = jwt.sign(userForToken, process.env.SECRET)
+    const token = jwt.sign(userForToken, process.env.SECRET, { expiresIn: 60 * 60 })
 
     //La solicitud exitosa retorna un estatus 200 ok, con el token generado, el nombre de usuario y el username.
     res

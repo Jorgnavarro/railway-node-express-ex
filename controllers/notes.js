@@ -3,6 +3,10 @@ const Note = require('../models/note')
 //agregamos el user
 const User = require('../models/user')
 
+//Creación de notes con token
+const jwt = require('jsonwebtoken')
+
+
 //Página inicial al ingresar al localhost
 // notesRouter.get('/', (req, res) => {
 //     res.send('<h1>Using express from NodeJS</h1>');
@@ -61,6 +65,17 @@ notesRouter.get('/:id', async (req, res) => {
 //     return maxId + 1;
 // }
 
+
+//Se aisla el authorization y el bearer, de la cadena, solamente se retorna el token
+
+const getTokenFrom = req => {
+    const authorization = req.get('authorization')
+    if(authorization && authorization.toLowerCase().startsWith('bearer ')){
+        return authorization.substring(7)
+    }
+    return null
+}
+
 // agregando un recurso
 notesRouter.post('/', async (req, res) => {
     //no necesitamos usar el tercer parámetro next, por eso lo eliminamos de la línea de arriba después de res.
@@ -71,12 +86,24 @@ notesRouter.post('/', async (req, res) => {
     //         error: 'content missing'
     //     })
     // }
+
+    //Se trae el token de la función que aisla la cabecera authorization y bearer
+    const token = getTokenFrom(req)
+    //Acá el token se decodifica y podemos acceder a los valores disponibles del usuario, como su id, name o username. verify, hace la verificación y decodifica el token, devolviendo el objeto en el que se basó el mismo
+    const decodedToken = jwt.verify(token, process.env.SECRET)
+    if(!token || !decodedToken){
+        return res.status(401).json({ error: 'token missing or invalid'})
+    }
+
+    const user = await User.findById(decodedToken.id)
+
+
     //buscamos el usuario para agregar como nuevo parámetro a la nota
     //las configuraciones ya están realizadas en el modelo
     //Una opción corta en el dato important: body.important || false
     //indica que si body important no está definido, será false, en caso contrario será
     //lo que contenga body.important, lo escribo porque pondré otra sintaxis
-    const user = await User.findById(body.userId)
+    //const user = await User.findById(body.userId)
     console.log(user)
     const note = new Note({
         content: body.content,
