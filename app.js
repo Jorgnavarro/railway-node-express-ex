@@ -14,6 +14,12 @@ const middleware = require('./utils/middleware')
 const logger = require('./utils/logger')
 const mongoose = require('mongoose')
 
+
+if(process.env.NODE_ENV === 'test'){
+    const testingRouter = require('./controllers/testing')
+    app.use('/api/testing', testingRouter)
+}
+
 logger.info('connecting to', config.MONGODB_URI)
 
 mongoose.connect(config.MONGODB_URI)
@@ -26,6 +32,7 @@ mongoose.connect(config.MONGODB_URI)
     
 //podemos conectar nuestro back y front con diferentes direcciones antes debemos hacer npm i cors
 app.use(cors())
+
 
 //agregamos este middleware para poder correr la página estática de nuestro front
 app.use(express.static('dist'))
@@ -45,17 +52,15 @@ app.use(morgan(':method :url :status :res[content-length] :response-time ms :bod
 
 app.use(middleware.requestLogger)
 
+app.use('/api/login', loginRouter)
+
 app.use('/api/users', usersRouter)
 
 app.use('/api/notes', notesRouter)
 
-app.use('/api/login', loginRouter)
 
 //Modificación agregada para que se resete la BBDD en caso de que se ejecute entorno de pruebas con Cypress. Recordar que nuestras pruebas sean unitarias o end to end no deberían de modificar la BBDD
-if(process.env.NODE_ENV === 'test'){
-    const testingRouter = require('./controllers/testing')
-    app.use('/api/testing', testingRouter)
-}
+
 
 app.use(middleware.unknownEndpoint)
 
